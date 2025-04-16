@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "~react-toastify/dist/ReactToastify.css";
+
+@layer base {
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"] {
+    -webkit-appearance: none;
+    margin: 0;
+    -moz-appearance: textfield !important;
+  }
+}
+:root {
+  --primary: #2279dd;
+  --secondary: #1e6bc2;
+  --accent: #73267e;
+  --background: #f7f8fa;
+  --bgAccent: #f0f5fa;
+  --surface: #e6f0fa;
+  --text: #333333;
+  --highlight: #f5a623;
+  --error: #d0021b;
+  --success: #26a637;
+  --tablehead: #9ca3af;
+
+  /* --hovertext: #000000; */
+}
+
+/* Dark mode variables */
+html.dark {
+  --primary: #2279dd;
+  --secondary: #4f94e3;
+  --accent: #9f34ad;
+  --background: #1e1e1e;
+  --bgAccent: #1a1a1a;
+  --surface: #181818;
+  --text: #c5c5c5;
+  --highlight: #ff9500;
+  --error: #e74c3c;
+  --success: #26a637;
+}
