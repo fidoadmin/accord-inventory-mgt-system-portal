@@ -18,9 +18,11 @@ export interface ContainerInterfaceForMaintenance {
   ClientName: string;
   ContainerId: string;
   NumberOfUnits: number;
+  ChallanUnit: string;
   Size: string;
   CanEdit: string;
   SmallUnit: string;
+  Description?: string;
   Created: string;
   Modified: string | null;
 }
@@ -66,12 +68,14 @@ export interface ContainerMaintenanceDetailInterface {
 
 export interface AddOrUpdateContainerPayloadInterface {
   Type?: string;
-  NumberOfUnits: number | undefined;
+  NumberOfUnits?: number | undefined;
   ClientId?: string;
   PackSizes?: string;
   Size: string;
+  ChallanUnit?: string;
   Id?: string;
   CategoryId?: string;
+  InventoryDescriptionId?: string;
   SmallUnit?: string;
 }
 

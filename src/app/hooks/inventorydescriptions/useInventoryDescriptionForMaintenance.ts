@@ -18,7 +18,7 @@ export const useInventoryDescriptionForMaintenance = (
   }
 ) => {
   const inventoryQuery = useQuery({
-    queryKey: ["inventoryDescriptionsForMaintenance", params],
+    queryKey: ["inventorydescriptions", params],
     queryFn: () =>
       fetchInventoryDescriptionForMaintenance(
         params.page,

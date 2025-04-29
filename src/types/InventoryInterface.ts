@@ -192,19 +192,18 @@ export interface InventoryDescriptionDetailInterface {
 
 export interface InventoryDescriptionForMaintenance {
   Id: string;
-  ManufacturerName: string;
+  Name?: string;
   ClientName: string;
-  HasExpiryDate: boolean;
-  HasBatchNumber: boolean;
-  ShortName: string;
+  ManufacturerName?: string;
+  CategoryName?: string;
+  HasExpiryDate?: boolean;
+  HasBatchNumber?: boolean;
   CategoryId: string;
-  Stock: number;
-  CategoryName: string;
+  ShortName?: string;
   Description: string;
   ModelName: string;
-  PartNumber: string;
-  Location: string;
-  DivideQuantity: boolean;
+  ReOrderQuantityPerShipper?: number;
+  ExpiryThresholdDays?: number;
 }
 
 export interface AddOrUpdateInventoryDescriptionPayloadInterface {
@@ -214,13 +213,9 @@ export interface AddOrUpdateInventoryDescriptionPayloadInterface {
   CategoryId?: string;
   ClientId?: string;
   ShortName?: string;
-  ManufacturerName?: string;
-  ManufacturerId?: string;
   ModelName?: string;
-  PartNumber?: string;
-  HasExpiryDate?: boolean;
-  HasBatchNumber?: boolean;
-  DivideQuantity?: boolean;
+  ReOrderQuantityPerShipper?: number;
+  ExpiryThresholdDays?: number;
 }
 
 export interface AddOrUpdateInventoryDescriptionResponseInterface {

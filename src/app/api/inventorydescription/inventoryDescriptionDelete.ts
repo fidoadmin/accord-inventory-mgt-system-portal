@@ -11,6 +11,7 @@ export const deleteInventoryDescriptions = async (
   if (!authKey) {
     throw new Error("No authKey found");
   }
+
   const response = await fetch(`${baseURL}/inventorydescriptions/${data.Id}`, {
     method: "DELETE",
     headers: {
@@ -23,7 +24,7 @@ export const deleteInventoryDescriptions = async (
     const errorText = await response.json();
     toast.error(errorText.error);
     throw new Error(
-      `Failed to delete inventory description(status:${response.status}):${errorText}`
+      `Failed to delete inventory description (status: ${response.status}): ${errorText}`
     );
   } else {
     toast.success("Inventory Description Deleted Successfully");

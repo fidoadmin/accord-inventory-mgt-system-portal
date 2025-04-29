@@ -42,7 +42,7 @@ export const fetchInventoryDescriptionForMaintenance = async (
   });
 
   const response = await fetch(
-    `${baseURL}/inventorydescriptions/maintenance?${query.toString()}`,
+    `${baseURL}/inventorydescriptions?${query.toString()}`,
     {
       method: "GET",
       headers: {

@@ -1,4 +1,3 @@
-import { deleteBranch } from "@/app/api/branches/branchDelete";
 import { deleteInventoryDescriptions } from "@/app/api/inventorydescription/inventoryDescriptionDelete";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -11,7 +10,7 @@ export const useDeleteInventoryDescription = () => {
         console.error(error);
       } else {
         await queryClient.invalidateQueries({
-          queryKey: ["inventoryDescriptions"],
+          queryKey: ["inventorydescriptions"],
         });
       }
     },

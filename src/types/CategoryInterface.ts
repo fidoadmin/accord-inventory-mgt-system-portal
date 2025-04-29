@@ -36,12 +36,6 @@ export interface AddOrUpdateCategoryPayloadInterface {
   Id: string;
   Name: string;
   ClientId?: string;
-  HasExpirationDate: boolean;
-  HasManufactureDate: boolean;
-  HasModelName: boolean;
-  HasPartNumber: boolean;
-  ShowSize: boolean;
-  AllowExpiredInventory: boolean;
 }
 
 export interface AddOrUpdateCategoryResponseInterface {

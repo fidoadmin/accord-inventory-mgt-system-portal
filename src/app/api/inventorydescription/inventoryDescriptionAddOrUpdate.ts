@@ -2,7 +2,6 @@ import {
   AddOrUpdateInventoryDescriptionPayloadInterface,
   AddOrUpdateInventoryDescriptionResponseInterface,
 } from "@/types/InventoryInterface";
-import { error } from "console";
 import { getCookie } from "cookies-next";
 import { toast } from "react-toastify";
 

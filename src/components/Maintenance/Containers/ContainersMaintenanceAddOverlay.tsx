@@ -1,12 +1,13 @@
 import { useState, FormEvent } from "react";
 import { useAddOrUpdateContainer } from "@/app/hooks/Container/useContainerAddOrUpdate";
 import Dropdown from "@/components/Dropdown";
-
 import { toast } from "react-toastify";
 import { SaveRounded, CancelRounded } from "@mui/icons-material";
 import { AddOrUpdateContainerPayloadInterface } from "@/types/ContainerInterface";
 import { useDropdownList } from "@/app/hooks/globaldropdown/useGlobalDropdown";
 import { ClientDetailInterface } from "@/types/ClientInterface";
+import { useCategoryList } from "@/app/hooks/categories/useCategoryList";
+import { useInventoryDescriptionForMaintenance } from "@/app/hooks/inventorydescriptions/useInventoryDescriptionForMaintenance";
 
 const ContainerAddOverlay = ({
   onOverlayClose,
@@ -18,6 +19,7 @@ const ContainerAddOverlay = ({
   const [authKey, setAuthKey] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedDescription, setSelectedDescription] = useState<string>("");
   const [roleCode, setRoleCode] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [search, setSearch] = useState("");
@@ -30,6 +32,8 @@ const ContainerAddOverlay = ({
       CategoryId: "",
       Type: "",
       SmallUnit: "",
+      ChallanUnit: "",
+      InventoryDescriptionId: "",
     });
   useState(() => {
     const key = localStorage.getItem("authKey") as "";
@@ -38,8 +42,17 @@ const ContainerAddOverlay = ({
     setRoleCode(RoleCode);
   });
   const { mutateAsync: addOrUpdateContainer } = useAddOrUpdateContainer();
-  const { data: categoryList } = useDropdownList("categories", search, filters);
+  const { data: categoryList } = useCategoryList(authKey || "", {
+    page: 1,
+  });
+  const categoryData = categoryList?.data || [];
+
   const { data: clientList } = useDropdownList("clients", search, filters);
+  const { data: inventoryDescriptionList } = useDropdownList(
+    "inventorydescriptions",
+    search,
+    { ...filters, CategoryId: selectedCategory }
+  );
 
   const handleSelectCategory = (option: {
     id: string;
@@ -50,6 +63,17 @@ const ContainerAddOverlay = ({
     setDescAddData((prev) => ({
       ...prev,
       CategoryId: option.id,
+    }));
+  };
+  const handleSelectInventoryDescription = (option: {
+    id: string;
+    name: string;
+    isExpiry?: boolean;
+  }) => {
+    setSelectedDescription(option.id);
+    setDescAddData((prev) => ({
+      ...prev,
+      InventoryDescriptionId: option.id,
     }));
   };
 
@@ -125,7 +149,7 @@ const ContainerAddOverlay = ({
           label="Category"
           showLabel
           options={
-            categoryList?.map((category) => ({
+            categoryData?.map((category) => ({
               id: category.Id,
               name: category.Name,
             })) ?? []
@@ -134,6 +158,22 @@ const ContainerAddOverlay = ({
           setIsOpen={() => handleSetOpenDropdown("category")}
           onSelect={handleSelectCategory}
           placeholder="Categories"
+          required
+          search={true}
+        />
+        <Dropdown
+          label="Descritpion"
+          showLabel
+          options={
+            inventoryDescriptionList?.map((inventory) => ({
+              id: inventory.Id,
+              name: inventory.Name || "",
+            })) ?? []
+          }
+          isOpen={openDropdown === "inventory"}
+          setIsOpen={() => handleSetOpenDropdown("inventory")}
+          onSelect={handleSelectInventoryDescription}
+          placeholder="Descritpion"
           required
           search={true}
         />
@@ -184,6 +224,15 @@ const ContainerAddOverlay = ({
           <input
             name="Size"
             value={descAddData.Size}
+            className="w-full inner-border-2 inner-border-primary rounded-xl p-2"
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label>Challan Unit</label>
+          <input
+            name="ChallanUnit"
+            value={descAddData.ChallanUnit}
             className="w-full inner-border-2 inner-border-primary rounded-xl p-2"
             onChange={handleChange}
           />

@@ -39,8 +39,8 @@ function CategoriesMaintenanceContainer() {
   const [menuItems, setMenuItems] = useState<SidebarSectionInterface[] | null>(
     null
   );
-  const { mutate: addOrUpdateCategory } = useAddOrUpdateCategory();
-  const { mutate: deleteCategoryDetails } = useDeleteCategoryDetail();
+  const { mutateAsync: addOrUpdateCategory } = useAddOrUpdateCategory();
+  const { mutateAsync: deleteCategoryDetails } = useDeleteCategoryDetail();
 
   const {
     data: categoryList,
@@ -99,12 +99,6 @@ function CategoriesMaintenanceContainer() {
       const payload: AddOrUpdateCategoryPayloadInterface = {
         Id: editingCategoryId || "",
         Name: editableCategory?.Name,
-        HasManufactureDate: editableCategory?.HasManufactureDate,
-        HasExpirationDate: editableCategory?.HasExpirationDate,
-        HasModelName: editableCategory?.HasModelName,
-        HasPartNumber: editableCategory?.HasPartNumber,
-        ShowSize: editableCategory?.ShowSize,
-        AllowExpiredInventory: editableCategory?.AllowExpiredInventory,
       };
 
       setCategories((prevUsers) =>
@@ -135,7 +129,7 @@ function CategoriesMaintenanceContainer() {
     toast(({ closeToast }) => (
       <div>
         <p className="text-white">
-          Are you sure you want to delete this category?
+          Are you sure you want to delete this Category?
         </p>
         <div className="flex gap-2 mt-2">
           <button
@@ -152,7 +146,6 @@ function CategoriesMaintenanceContainer() {
 
                 closeToast();
               } catch (error: any) {
-                toast.error("Failed to delete user", { position: "top-right" });
                 closeToast();
               }
             }}
@@ -180,7 +173,13 @@ function CategoriesMaintenanceContainer() {
 
   const handelSuccess = async (newCategories: any) => {
     if (newCategories) {
-      setCategories((prevCategories) => [newCategories, ...prevCategories]);
+      setCategories((prevCategories) =>
+        prevCategories.map((category) =>
+          category.Id === editingCategoryId
+            ? { ...category, ...editableCategory }
+            : category
+        )
+      );
       setSortBy("created");
       setSortOrder("desc");
     }
@@ -250,52 +249,6 @@ function CategoriesMaintenanceContainer() {
                 )}
                 <th
                   className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("expirationdate")}
-                >
-                  Expiration Date{" "}
-                  {sortBy === "expirationdate" &&
-                    (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("manufacturerdate")}
-                >
-                  Manufacturer Date{" "}
-                  {sortBy === "manufacturerdate" &&
-                    (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("showsize")}
-                >
-                  Show Size{" "}
-                  {sortBy === "showsize" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("allowexpiredinventory")}
-                >
-                  Allow Expired{" "}
-                  {sortBy === "allowexpiredinventory" &&
-                    (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("partnumber")}
-                >
-                  Part Number{" "}
-                  {sortBy === "partnumber" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
-                  onClick={() => handleSortChange("modelname")}
-                >
-                  Model Name{" "}
-                  {sortBy === "modelname" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  className="cursor-pointer text-left border-b p-2  text-sm"
                   onClick={() => handleSortChange("created")}
                 >
                   Created
@@ -336,286 +289,26 @@ function CategoriesMaintenanceContainer() {
               ) : (
                 categoryList.data.map((category) => (
                   <tr className="border hover:bg-gray-50" key={category.Id}>
-                    <td className="text-left  truncate">
-                      {category.Name || ""}
+                    <td className="p-1">
+                      {editingCategoryId === category.Id ? (
+                        <input
+                          type="text"
+                          value={editableCategory?.Name || ""}
+                          onChange={(e) =>
+                            setEditableCategory({
+                              ...editableCategory,
+                              Name: e.target.value,
+                            })
+                          }
+                          className="w-fit p-1 border rounded-md"
+                        />
+                      ) : (
+                        category.Name
+                      )}
                     </td>
                     {roleCode === "USERROLE_SYSTEMADMIN" && (
                       <td className="p-1">{category.ClientName}</td>
                     )}
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label
-                            className="flex items-left cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={
-                                editableCategory?.HasExpirationDate || false
-                              }
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  HasExpirationDate: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.HasExpirationDate
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.HasExpirationDate
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.HasExpirationDate ? "Yes" : "No"}
-                          </span>
-                        </div>
-                      ) : category.HasExpirationDate ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label
-                            className="flex items-left cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={
-                                editableCategory?.HasManufactureDate ?? false
-                              }
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  HasManufactureDate: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.HasManufactureDate
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.HasManufactureDate
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.HasManufactureDate
-                              ? "Yes"
-                              : "No"}
-                          </span>
-                        </div>
-                      ) : category.HasManufactureDate ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label className="flex items-left">
-                            <input
-                              type="checkbox"
-                              checked={editableCategory?.ShowSize ?? false}
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  ShowSize: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.ShowSize
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.ShowSize
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.ShowSize ? "Yes" : "No"}
-                          </span>
-                        </div>
-                      ) : category.ShowSize ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label className="flex items-left">
-                            <input
-                              type="checkbox"
-                              checked={
-                                editableCategory?.AllowExpiredInventory ?? false
-                              }
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  AllowExpiredInventory: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.AllowExpiredInventory
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.AllowExpiredInventory
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.AllowExpiredInventory
-                              ? "Yes"
-                              : "No"}
-                          </span>
-                        </div>
-                      ) : category.AllowExpiredInventory ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label
-                            className="flex items-left cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={editableCategory?.HasPartNumber || false}
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  HasPartNumber: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.HasPartNumber
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.HasPartNumber
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.HasPartNumber ? "Yes" : "No"}
-                          </span>
-                        </div>
-                      ) : category.HasPartNumber ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
-                    <td className="p-1 text-left">
-                      {editingCategoryId === category.Id ? (
-                        <div className="flex justify-left items-left space-x-4">
-                          <label
-                            className="flex items-left cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={editableCategory?.HasModelName || false}
-                              onChange={(e) =>
-                                setEditableCategory({
-                                  ...editableCategory,
-                                  HasModelName: e.target.checked,
-                                })
-                              }
-                              className="toggle-checkbox hidden"
-                            />
-                            <span
-                              className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                editableCategory?.HasModelName
-                                  ? "bg-success"
-                                  : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                  editableCategory?.HasModelName
-                                    ? "translate-x-5"
-                                    : "translate-x-0"
-                                }`}
-                              ></span>
-                            </span>
-                          </label>
-                          <span>
-                            {editableCategory?.HasModelName ? "Yes" : "No"}
-                          </span>
-                        </div>
-                      ) : category.HasModelName ? (
-                        "Yes"
-                      ) : (
-                        "No"
-                      )}
-                    </td>
-
                     <td className="p-1 text-left">{category.Created}</td>
                     <td className="p-1 text-left">{category.Modified}</td>
                     <td className="p-1 text-left">

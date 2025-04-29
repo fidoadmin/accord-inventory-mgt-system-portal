@@ -46,9 +46,10 @@ export default function ContainersMaintenanceContainer() {
   const [isClientSelected, setIsClientSelected] = useState(false);
   const itemsPerPage = 10;
   const [editableData, setEditableData] = useState<{
+    Id: string | undefined;
     Size: string | undefined;
-    NumberOfUnits: number | undefined;
     SmallUnit: string | undefined;
+    ChallanUnit: string | undefined;
   }>();
   const handleSetOpenDropdown = (dropdownId: string) => {
     setOpenDropdown((prev) => (prev === dropdownId ? null : dropdownId));
@@ -56,7 +57,7 @@ export default function ContainersMaintenanceContainer() {
   const { data: containerList } =
     useContainersForMaintenance(authKey || "", {
       page: currentPage,
-      limit: 6,
+      limit: 10,
       search: searchTerm,
       categoryId: selectedCategory,
       sortBy: sortBy,
@@ -152,43 +153,48 @@ export default function ContainersMaintenanceContainer() {
     }
   };
   const handleEditClick = (pack: any) => {
-    setEditingIndex(pack.ContainerId);
+    setEditingIndex(pack.Id);
     setEditableData({
-      NumberOfUnits: pack.NumberOfUnits ? pack.NumberOfUnits : undefined,
+      Id: pack.Id,
       Size: pack.Size,
       SmallUnit: pack.SmallUnit,
+      ChallanUnit: pack.ChallanUnit || undefined,
     });
   };
+
   const handleSave = async () => {
-    if (editingIndex === null) {
+    if (!editableData?.Id) {
+      console.error("Missing Container ID. Cannot save!");
       return;
     }
     try {
       await addOrUpdateContainer({
-        Id: editingIndex,
-        Size: editableData?.Size || "",
-        NumberOfUnits: editableData?.NumberOfUnits || undefined,
-        SmallUnit: editableData?.SmallUnit,
+        Id: editableData.Id,
+        Size: editableData.Size || "",
+        SmallUnit: editableData.SmallUnit,
+        ChallanUnit: editableData.ChallanUnit || undefined,
       });
       setOpenDropdown(null);
       setSortBy("modified");
       setSortOrder("desc");
       setEditingIndex(null);
+      setEditableData(undefined);
     } catch (error) {
-      console.error("Error saving container:", error);
+      console.error("Failed to save container:", error);
     }
   };
+
   const handleCancel = () => {
     setEditingIndex(null);
   };
-  const { mutate: deleteContainer } = useDeleteContainer();
+  const { mutateAsync: deleteContainer } = useDeleteContainer();
   const handleDelete = async (containerId: string) => {
     toast(({ closeToast }) => (
       <div>
         <p className="text-white">Are you sure you want to delete this item?</p>
         <div className="flex gap-2 mt-2">
           <button
-            onClick={() => {
+            onClick={async () => {
               deleteContainer({ Id: containerId, AuthKey: authKey });
             }}
             className="px-3 py-1.5 bg-error text-white rounded-md hover:bg-error"
@@ -328,6 +334,22 @@ export default function ContainersMaintenanceContainer() {
                 </th>
                 <th
                   className="cursor-pointer p-1"
+                  onClick={() => handleSort("description")}
+                >
+                  Description
+                  {sortBy === "description" &&
+                    (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="cursor-pointer p-1"
+                  onClick={() => handleSort("challanunit")}
+                >
+                  Challan Unit{" "}
+                  {sortBy === "challanunit" &&
+                    (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="cursor-pointer p-1"
                   onClick={() => handleSort("created")}
                 >
                   Created{" "}
@@ -346,85 +368,84 @@ export default function ContainersMaintenanceContainer() {
             <tbody>
               {(containerList?.data.length ? containerList?.data.length : 0) >
               0 ? (
-                containerList?.data.map((container) => (
-                  <tr key={container.Id}>
-                    <td className="border-b p-1">{container.Type || "N/A"}</td>
+                containerList?.data.map((pack) => (
+                  <tr key={pack.Id}>
+                    <td className="border-b p-1">{pack.Type || "N/A"}</td>
                     {roleCode === "USERROLE_SYSTEMADMIN" && (
                       <td className="border-b p-1">
-                        {container.ClientName || "N/A"}
+                        {pack.ClientName || "N/A"}
                       </td>
                     )}
                     <td className="border-b p-1">
-                      {editingIndex === container.ContainerId &&
-                      container.CanEdit ? (
-                        <input
-                          type="number"
-                          value={
-                            editableData?.NumberOfUnits !== undefined
-                              ? editableData.NumberOfUnits.toString()
-                              : ""
-                          }
-                          onChange={(e) =>
-                            setEditableData({
-                              Size: editableData?.Size || "",
-                              SmallUnit: editableData?.SmallUnit || "",
-                              NumberOfUnits: e.target.value
-                                ? parseInt(e.target.value, 10)
-                                : undefined,
-                            })
-                          }
-                          className="w-60 border rounded p-1"
-                        />
-                      ) : (
-                        container.NumberOfUnits || "N/A"
-                      )}
+                      {pack.NumberOfUnits || "N/A"}
                     </td>
                     <td className="border-b p-1">
-                      {editingIndex === container.ContainerId ? (
+                      {editingIndex === pack.Id ? (
                         <input
                           type="text"
                           value={editableData?.Size || ""}
                           onChange={(e) =>
                             setEditableData({
+                              Id: pack.Id,
                               Size: e.target.value.toUpperCase(),
-                              NumberOfUnits:
-                                editableData?.NumberOfUnits || undefined,
                               SmallUnit: editableData?.SmallUnit || "",
+                              ChallanUnit:
+                                editableData?.ChallanUnit || undefined,
                             })
                           }
-                          className="w-60 border rounded p-1"
+                          className="w-32 border rounded p-1"
                         />
                       ) : (
-                        container.Size
+                        pack.Size
                       )}
                     </td>
                     <td className="border-b p-1">
-                      {editingIndex === container.ContainerId ? (
+                      {editingIndex === pack.Id ? (
                         <input
                           type="text"
                           value={editableData?.SmallUnit || ""}
                           onChange={(e) =>
                             setEditableData({
+                              Id: pack.Id,
                               Size: editableData?.Size || "",
-                              NumberOfUnits:
-                                editableData?.NumberOfUnits || undefined,
                               SmallUnit: e.target.value.toUpperCase(),
+                              ChallanUnit:
+                                editableData?.ChallanUnit || undefined,
                             })
                           }
-                          className="w-60 border rounded p-1"
+                          className="w-32 border rounded p-1"
                         />
                       ) : (
-                        container.SmallUnit
+                        pack.SmallUnit
                       )}
                     </td>
                     <td className="border-b p-1">
-                      {container.Created || "N/A"}
+                      {pack.Description || "N/A"}
                     </td>
+
                     <td className="border-b p-1">
-                      {container.Modified || "N/A"}
+                      {editingIndex === pack.Id ? (
+                        <input
+                          type="text"
+                          value={editableData?.ChallanUnit || ""}
+                          onChange={(e) =>
+                            setEditableData({
+                              Size: editableData?.Size || "",
+                              Id: pack.Id,
+                              ChallanUnit: e.target.value.toUpperCase(),
+                              SmallUnit: editableData?.SmallUnit || "",
+                            })
+                          }
+                          className="w-32 border rounded p-1"
+                        />
+                      ) : (
+                        pack.ChallanUnit
+                      )}
                     </td>
+                    <td className="border-b p-1">{pack.Created || "N/A"}</td>
+                    <td className="border-b p-1">{pack.Modified || "N/A"}</td>
                     <td className="border-b p-1">
-                      {editingIndex === container.ContainerId ? (
+                      {editingIndex === pack.Id ? (
                         <>
                           <button
                             onClick={handleSave}
@@ -444,7 +465,7 @@ export default function ContainersMaintenanceContainer() {
                           {accessDetails &&
                             accessDetails[0]?.CanUpdate === "1" && (
                               <button
-                                onClick={() => handleEditClick(container)}
+                                onClick={() => handleEditClick(pack)}
                                 className="text-success"
                               >
                                 <EditRounded />
@@ -455,9 +476,7 @@ export default function ContainersMaintenanceContainer() {
                             accessDetails[0]?.CanDelete === "1" && (
                               <button
                                 className="text-error"
-                                onClick={() =>
-                                  handleDelete(container.ContainerId)
-                                }
+                                onClick={() => handleDelete(pack.Id)}
                               >
                                 <DeleteRounded />
                               </button>

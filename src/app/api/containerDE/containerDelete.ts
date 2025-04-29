@@ -5,7 +5,7 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
 export const deleteContainerDetails = async (
   data: DeleteContainerDetailInterface
-): Promise<Response> => {
+): Promise<void> => {
   const response = await fetch(`${baseURL}/containers/${data.Id}`, {
     method: "DELETE",
     headers: {
@@ -20,7 +20,7 @@ export const deleteContainerDetails = async (
     throw new Error(
       `Failed to delete container (status: ${response.status}): ${errorText}`
     );
+  } else {
+    toast.success("Container Deleted Successfully");
   }
-
-  return response;
 };

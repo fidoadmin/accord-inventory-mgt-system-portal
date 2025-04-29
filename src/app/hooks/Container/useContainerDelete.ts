@@ -11,12 +11,9 @@ export const useDeleteContainer = () => {
       if (error) {
         console.error("Error deleting container:", error);
       } else {
-        toast.success("Container Deleted Successfully");
-
-        queryClient.invalidateQueries({
-          queryKey: ["containersformaintenance"],
+        await queryClient.invalidateQueries({
+          queryKey: ["containers"],
         });
-        console.log("Container list query invalidated.");
       }
     },
   });
