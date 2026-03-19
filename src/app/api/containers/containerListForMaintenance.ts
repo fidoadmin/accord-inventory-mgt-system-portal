@@ -33,16 +33,13 @@ export const fetchContainerListForMaintenance = async (
     ClientId: clientid || "",
   });
 
-  const response = await fetch(
-    `${baseURL}/containers/maintenance?${query.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        AuthKey: authKey,
-      },
-    }
-  );
+  const response = await fetch(`${baseURL}/containers?${query.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      AuthKey: authKey,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch inventory list");

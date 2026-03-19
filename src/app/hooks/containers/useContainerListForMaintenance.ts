@@ -15,7 +15,7 @@ export const useContainersForMaintenance = (
   }
 ) => {
   const containerQuery = useQuery({
-    queryKey: ["containersformaintenance", authKey, params],
+    queryKey: ["containers", authKey, params],
     queryFn: () =>
       fetchContainerListForMaintenance(
         params.page,

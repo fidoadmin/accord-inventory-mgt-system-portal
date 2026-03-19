@@ -11,7 +11,7 @@ export const useAddOrUpdateContainer = () => {
         console.error(error);
       } else {
         queryClient.invalidateQueries({
-          queryKey: ["containersformaintenance"],
+          queryKey: ["containers"],
         });
       }
     },

@@ -26,11 +26,8 @@ function InventoryDescriptionMaintenanceContainer() {
   const [addbutton, setAddButton] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
-  const [message, setMessage] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("modified");
   const [sortOrder, setSortOrder] = useState<string>("desc");
-  const [hasExpiryDate, setHasExpiryDate] = useState<boolean>(true);
-  const [hasBatchNumber, setHasBatchNumber] = useState<boolean>(true);
   const [menuItems, setMenuItems] = useState<SidebarSectionInterface[] | null>(
     null
   );
@@ -41,15 +38,14 @@ function InventoryDescriptionMaintenanceContainer() {
   const [isClientSelected, setIsClientSelected] = useState(false);
   const [roleCode, setRoleCode] = useState<string | null>(null);
 
-  const { mutate: addOrUpdateInventoryDescription } =
+  const { mutateAsync: addOrUpdateInventoryDescription } =
     useAddOrUpdateInventoryDescription();
-  const { mutate: deleteInventoryDescription } =
+  const { mutateAsync: deleteInventoryDescription } =
     useDeleteInventoryDescription();
   const {
     data: inventoryDescriptionList,
     error: inventoryError,
     isLoading: inventoryLoading,
-    refetch: refetchInventoryData,
   } = useInventoryDescriptionForMaintenance(authKey, {
     page: currentPage,
     limit: itemsPerPage,
@@ -113,12 +109,6 @@ function InventoryDescriptionMaintenanceContainer() {
     setSelectedCategory(categoryId);
   };
 
-  const hasPartNumber = inventoryDescriptionList?.data?.some(
-    (item) =>
-      item.PartNumber &&
-      data?.some((inventory) => inventory.PartNumber !== null)
-  );
-
   const hasModelName = inventoryDescriptionList?.data?.some(
     (item) =>
       item.ModelName && data?.some((inventory) => inventory.ModelName !== null)
@@ -133,10 +123,6 @@ function InventoryDescriptionMaintenanceContainer() {
         Description: item.Description || "",
         ShortName: item.ShortName || "",
         ModelName: item.ModelName || "",
-        PartNumber: item.PartNumber || "",
-        HasExpiryDate: item.HasExpiryDate ? item.HasExpiryDate : undefined,
-        HasBatchNumber: item.HasBatchNumber ? item.HasBatchNumber : undefined,
-        DivideQuantity: item.DivideQuantity ? item.DivideQuantity : undefined,
       });
     }
   };
@@ -153,23 +139,16 @@ function InventoryDescriptionMaintenanceContainer() {
       const payload: AddOrUpdateInventoryDescriptionPayloadInterface = {
         Id: editedValues?.Id,
         Description: editedValues?.Description,
-        CategoryName: editedValues?.CategoryName,
-        CategoryId: editedValues?.CategoryId,
         ShortName: editedValues?.ShortName,
-        ManufacturerName: editedValues?.ManufacturerName,
-        ManufacturerId: editedValues?.ManufacturerId,
         ModelName: editedValues?.ModelName,
-        PartNumber: editedValues?.PartNumber,
-        HasExpiryDate: editedValues?.HasExpiryDate,
-        HasBatchNumber: editedValues?.HasBatchNumber,
-        DivideQuantity: editedValues?.DivideQuantity,
+        ExpiryThresholdDays: editedValues?.ExpiryThresholdDays,
+        ReOrderQuantityPerShipper: editedValues?.ReOrderQuantityPerShipper,
       };
 
       await addOrUpdateInventoryDescription(payload, {
         onSuccess: () => {
           setEditingItem(null);
           setEditedValues({});
-          refetchInventoryData();
         },
         onError: (error) => {
           toast.error(
@@ -191,54 +170,35 @@ function InventoryDescriptionMaintenanceContainer() {
   };
 
   const handleDelete = (id: string) => {
-    toast(
-      ({ closeToast }) => (
-        <div>
-          <p className="text-black">
-            Are you sure you want to delete this Inventory?
-          </p>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => {
-                deleteInventoryDescription(
-                  { Id: id, AuthKey: authKey },
-                  {
-                    onSuccess: () => {
-                      refetchInventoryData();
-                      closeToast();
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        `Error deleting item: ${
-                          error.message || "Unknown error"
-                        }`,
-                        {
-                          position: "top-right",
-                        }
-                      );
-                      closeToast();
-                    },
-                  }
-                );
-              }}
-              className="px-3 py-1.5 bg-error text-white rounded-md hover:bg-error"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        autoClose: false,
-        position: "top-right",
-        className: "bg-warning text-white",
-      }
-    );
-  };
+    toast(({ closeToast }) => (
+      <div>
+        <p className="text-white">
+          Are you sure you want to delete this Inventory?
+        </p>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={async () => {
+              try {
+                await deleteInventoryDescription({
+                  Id: id,
+                  AuthKey: authKey || "",
+                });
 
+                closeToast();
+              } catch (error: any) {
+                closeToast();
+              }
+            }}
+            className="px-3 py-1.5 bg-error text-white rounded-md hover:bg-error"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ));
+  };
   const handleOverlayClose = () => {
     setAddButton(false);
-    refetchInventoryData();
   };
 
   const handleSortChange = (column: string) => {
@@ -320,14 +280,6 @@ function InventoryDescriptionMaintenanceContainer() {
             <table className="w-full border-collapse table-fixed">
               <thead>
                 <tr className="bg-tablehead border-b-2 text-left">
-                  <th
-                    className="cursor-pointer text-left border-b p-2  text-sm"
-                    onClick={() => handleSortChange("manufacturername")}
-                  >
-                    Manufacturer
-                    {sortBy === "manufacturername" &&
-                      (sortOrder === "asc" ? "↑" : "↓")}
-                  </th>
                   {roleCode === "USERROLE_SYSTEMADMIN" && (
                     <th
                       className="cursor-pointer p-2"
@@ -339,18 +291,18 @@ function InventoryDescriptionMaintenanceContainer() {
                   )}
                   <th
                     className="cursor-pointer text-left border-b p-2  text-sm"
-                    onClick={() => handleSortChange("category")}
-                  >
-                    Category{" "}
-                    {sortBy === "category" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </th>
-                  <th
-                    className="cursor-pointer text-left border-b p-2  text-sm"
                     onClick={() => handleSortChange("description")}
                   >
                     Description
                     {sortBy === "description" &&
                       (sortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className="cursor-pointer text-left border-b p-2  text-sm"
+                    onClick={() => handleSortChange("category")}
+                  >
+                    Category
+                    {sortBy === "category" && (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
                   <th
                     className="cursor-pointer text-left border-b p-2  text-sm"
@@ -362,51 +314,31 @@ function InventoryDescriptionMaintenanceContainer() {
                   </th>
                   <th
                     className="cursor-pointer text-left border-b p-2  text-sm"
-                    onClick={() => handleSortChange("dividequantity")}
+                    onClick={() => handleSortChange("modelname")}
                   >
-                    Divide Quantity
-                    {sortBy === "dividequantity" &&
+                    Model Name
+                    {sortBy === "modelname" &&
                       (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
-                  {hasExpiryDate && (
-                    <th
-                      className="cursor-pointer border-b p-2  text-sm text-left"
-                      onClick={() => handleSortChange("expiry")}
-                    >
-                      Expiry Date
-                      {sortBy === "expiry" && (sortOrder === "asc" ? "↑" : "↓")}
-                    </th>
-                  )}
-                  {hasBatchNumber && (
-                    <th
-                      className="cursor-pointer text-left border-b p-2  text-sm"
-                      onClick={() => handleSortChange("batchnumber")}
-                    >
-                      Batch No
-                      {sortBy === "batchnumber" &&
-                        (sortOrder === "asc" ? "↑" : "↓")}
-                    </th>
-                  )}
-                  {selectedCategory && hasModelName && (
-                    <th
-                      className="cursor-pointer text-left border-b p-2  text-sm"
-                      onClick={() => handleSortChange("modelname")}
-                    >
-                      Model Name
-                      {sortBy === "modelname" &&
-                        (sortOrder === "asc" ? "↑" : "↓")}
-                    </th>
-                  )}
-                  {selectedCategory && hasPartNumber && (
-                    <th
-                      className="cursor-pointer text-left border-b p-2  text-sm"
-                      onClick={() => handleSortChange("partnumber")}
-                    >
-                      Part Number
-                      {sortBy === "partnumber" &&
-                        (sortOrder === "asc" ? "↑" : "↓")}
-                    </th>
-                  )}
+                  <th
+                    className="cursor-pointer border-b p-2  text-sm text-left"
+                    onClick={() => handleSortChange("expirythresholddays")}
+                  >
+                    Expiry Threshold Days
+                    {sortBy === "expirythresholddays" &&
+                      (sortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className="cursor-pointer border-b p-2  text-sm text-left"
+                    onClick={() =>
+                      handleSortChange("reorderquantitypershipper")
+                    }
+                  >
+                    Reorder Quantity PerShipper
+                    {sortBy === "reorderquantitypershipper" &&
+                      (sortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+
                   <th className="cursor-pointer border-b p-2 text-sm text-left">
                     Actions
                   </th>
@@ -435,13 +367,9 @@ function InventoryDescriptionMaintenanceContainer() {
                 ) : (
                   data.map((item) => (
                     <tr key={item.Id}>
-                      <td className="border-b p-1 truncate max-w-xs">
-                        {item.ManufacturerName}
-                      </td>
                       {roleCode === "USERROLE_SYSTEMADMIN" && (
                         <td className="border-b p-1">{item.ClientName}</td>
                       )}
-                      <td className="border-b p-1">{item.CategoryName}</td>
                       <td className="border-b p-1 truncate max-w-xs">
                         {editingItem === item.Id ? (
                           <input
@@ -458,6 +386,9 @@ function InventoryDescriptionMaintenanceContainer() {
                         ) : (
                           item.Description
                         )}
+                      </td>
+                      <td className="border-b p-1 text-left truncate max-w-xs">
+                        {item.CategoryName}
                       </td>
                       <td className="border-b p-1 text-left truncate">
                         {editingItem === item.Id ? (
@@ -476,131 +407,63 @@ function InventoryDescriptionMaintenanceContainer() {
                           item.ShortName
                         )}
                       </td>
-                      <td className="border-b p-1 text-left">
-                        {item.DivideQuantity ? "Yes" : "No"}
+
+                      <td className="border-b p-1 text-left truncate max-w-xs">
+                        {editingItem === item.Id ? (
+                          <input
+                            type="text"
+                            value={editedValues?.ModelName || ""}
+                            onChange={(e) =>
+                              setEditedValues({
+                                ...editedValues,
+                                ModelName: e.target.value,
+                              })
+                            }
+                            className="w-full p-1 border rounded-md"
+                          />
+                        ) : (
+                          item.ModelName || "No"
+                        )}
                       </td>
 
-                      <td className="border-b p-1 text-left">
+                      <td className="border-b p-1 text-left truncate max-w-xs">
                         {editingItem === item.Id ? (
-                          <div className="flex justify-left items-left space-x-4">
-                            <label className="flex items-left">
-                              <input
-                                type="checkbox"
-                                checked={!!editedValues?.HasExpiryDate}
-                                onChange={() =>
-                                  setEditedValues((prevState) => ({
-                                    ...prevState,
-                                    HasExpiryDate: !prevState?.HasExpiryDate,
-                                  }))
-                                }
-                                className="toggle-checkbox hidden"
-                              />
-                              <span
-                                className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                  editedValues?.HasExpiryDate
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                }`}
-                              >
-                                <span
-                                  className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                    editedValues?.HasExpiryDate
-                                      ? "translate-x-5"
-                                      : "translate-x-0"
-                                  }`}
-                                ></span>
-                              </span>
-                            </label>
-                            <span>
-                              {editedValues?.HasExpiryDate ? "Yes" : "No"}
-                            </span>
-                          </div>
+                          <input
+                            type="text"
+                            value={editedValues?.ExpiryThresholdDays || ""}
+                            onChange={(e) =>
+                              setEditedValues({
+                                ...editedValues,
+                                ExpiryThresholdDays: Number(e.target.value),
+                              })
+                            }
+                            className="w-full p-1 border rounded-md"
+                          />
                         ) : (
-                          <p>{item.HasExpiryDate ? "Yes" : "No"}</p>
+                          item.ExpiryThresholdDays
                         )}
                       </td>
-                      <td className="border-b p-1 text-left">
+                      <td className="border-b p-1 text-left truncate max-w-xs">
                         {editingItem === item.Id ? (
-                          <div className="flex justify-left items-left space-x-4">
-                            <label className="flex items-left">
-                              <input
-                                type="checkbox"
-                                checked={!!editedValues?.HasBatchNumber}
-                                onChange={() =>
-                                  setEditedValues((prevState) => ({
-                                    ...prevState,
-                                    HasBatchNumber: !prevState?.HasBatchNumber,
-                                  }))
-                                }
-                                className="toggle-checkbox hidden"
-                              />
-                              <span
-                                className={`toggle-switch w-10 h-5 flex items-center bg-gray-300 rounded-full p-1 cursor-pointer ${
-                                  editedValues?.HasBatchNumber
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                }`}
-                              >
-                                <span
-                                  className={`toggle-dot w-4 h-4 bg-white rounded-full shadow-md transform ${
-                                    editedValues?.HasBatchNumber
-                                      ? "translate-x-5"
-                                      : "translate-x-0"
-                                  }`}
-                                ></span>
-                              </span>
-                            </label>
-                            <span>
-                              {editedValues?.HasBatchNumber ? "Yes" : "No"}
-                            </span>
-                          </div>
+                          <input
+                            type="text"
+                            value={
+                              editedValues?.ReOrderQuantityPerShipper || ""
+                            }
+                            onChange={(e) =>
+                              setEditedValues({
+                                ...editedValues,
+                                ReOrderQuantityPerShipper: Number(
+                                  e.target.value
+                                ),
+                              })
+                            }
+                            className="w-full p-1 border rounded-md"
+                          />
                         ) : (
-                          <span
-                            onClick={() => setEditingItem(item.Id)}
-                            className="cursor-pointer hover:underline"
-                          >
-                            {item.HasBatchNumber ? "Yes" : "No"}
-                          </span>
+                          item.ReOrderQuantityPerShipper
                         )}
                       </td>
-                      {selectedCategory && hasModelName && (
-                        <td className="border-b p-1 text-left truncate max-w-xs">
-                          {editingItem === item.Id ? (
-                            <input
-                              type="text"
-                              value={editedValues?.ModelName || ""}
-                              onChange={(e) =>
-                                setEditedValues({
-                                  ...editedValues,
-                                  ModelName: e.target.value,
-                                })
-                              }
-                              className="w-full p-1 border rounded-md"
-                            />
-                          ) : (
-                            item.ModelName || "No"
-                          )}
-                        </td>
-                      )}
-                      {selectedCategory && hasPartNumber && (
-                        <td className="border-b p-1 truncate max-w-xs text-left">
-                          {editingItem === item.Id ? (
-                            <input
-                              type="text"
-                              value={editedValues?.PartNumber || ""}
-                              onChange={(e) =>
-                                setEditedValues({
-                                  ...editedValues,
-                                  PartNumber: e.target.value,
-                                })
-                              }
-                              className="w-full p-1 border rounded-md"
-                            />
-                          ) : (
-                            item.PartNumber || "No"
-                          )}
-                        </td>
-                      )}
                       <td className="border-b p-1 text-left">
                         {editingItem === item.Id ? (
                           <>

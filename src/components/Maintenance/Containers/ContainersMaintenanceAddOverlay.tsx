@@ -1,12 +1,12 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useAddOrUpdateContainer } from "@/app/hooks/Container/useContainerAddOrUpdate";
 import Dropdown from "@/components/Dropdown";
-
 import { toast } from "react-toastify";
 import { SaveRounded, CancelRounded } from "@mui/icons-material";
 import { AddOrUpdateContainerPayloadInterface } from "@/types/ContainerInterface";
 import { useDropdownList } from "@/app/hooks/globaldropdown/useGlobalDropdown";
 import { ClientDetailInterface } from "@/types/ClientInterface";
+import { useCategoryList } from "@/app/hooks/categories/useCategoryList";
 
 const ContainerAddOverlay = ({
   onOverlayClose,
@@ -18,6 +18,7 @@ const ContainerAddOverlay = ({
   const [authKey, setAuthKey] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedDescription, setSelectedDescription] = useState<string>("");
   const [roleCode, setRoleCode] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [search, setSearch] = useState("");
@@ -30,6 +31,8 @@ const ContainerAddOverlay = ({
       CategoryId: "",
       Type: "",
       SmallUnit: "",
+      ChallanUnit: "",
+      InventoryDescriptionId: "",
     });
   useState(() => {
     const key = localStorage.getItem("authKey") as "";
@@ -37,10 +40,31 @@ const ContainerAddOverlay = ({
     const RoleCode = localStorage.getItem("RoleCode");
     setRoleCode(RoleCode);
   });
-  const { mutateAsync: addOrUpdateContainer } = useAddOrUpdateContainer();
-  const { data: categoryList } = useDropdownList("categories", search, filters);
-  const { data: clientList } = useDropdownList("clients", search, filters);
 
+  const { mutateAsync: addOrUpdateContainer } = useAddOrUpdateContainer();
+  const { data: categoryList } = useCategoryList(authKey || "", {
+    page: 1,
+  });
+  const category = categoryList?.data || [];
+  const medicineCategory = category.find(
+    (cat) => cat.Name.toLowerCase() === "medicine"
+  );
+
+  const { data: clientList } = useDropdownList("clients", search, filters);
+  const { data: inventoryDescriptionList } = useDropdownList(
+    "inventorydescriptions",
+    search,
+    { ...filters, CategoryId: selectedCategory }
+  );
+  useEffect(() => {
+    if (medicineCategory) {
+      setSelectedCategory(medicineCategory.Id);
+      setDescAddData((prev) => ({
+        ...prev,
+        CategoryId: medicineCategory.Id,
+      }));
+    }
+  }, [medicineCategory]);
   const handleSelectCategory = (option: {
     id: string;
     name: string;
@@ -50,6 +74,17 @@ const ContainerAddOverlay = ({
     setDescAddData((prev) => ({
       ...prev,
       CategoryId: option.id,
+    }));
+  };
+  const handleSelectInventoryDescription = (option: {
+    id: string;
+    name: string;
+    isExpiry?: boolean;
+  }) => {
+    setSelectedDescription(option.id);
+    setDescAddData((prev) => ({
+      ...prev,
+      InventoryDescriptionId: option.id,
     }));
   };
 
@@ -121,21 +156,43 @@ const ContainerAddOverlay = ({
         <h1 className="text-lg text-primary text-center font-bold">
           Add Container
         </h1>
+
+        <div className="h-full w-full text-sm">
+          Category <span className="text-error text-sm">*</span>
+          <select
+            id="category-select"
+            value={descAddData.CategoryId || ""}
+            onChange={(e) =>
+              handleSelectCategory({
+                id: e.target.value,
+                name: e.target.options[e.target.selectedIndex].text,
+              })
+            }
+            className="w-full inner-border-2 inner-border-primary rounded-xl p-3"
+          >
+            {category.map((categories) => (
+              <option key={categories.Id} value={categories.Id}>
+                {categories.Name}
+              </option>
+            ))}
+          </select>
+        </div>
         <Dropdown
-          label="Category"
+          label="Descritpion"
           showLabel
           options={
-            categoryList?.map((category) => ({
-              id: category.Id,
-              name: category.Name,
+            inventoryDescriptionList?.map((inventory) => ({
+              id: inventory.Id,
+              name: inventory.Name || "",
             })) ?? []
           }
-          isOpen={openDropdown === "category"}
-          setIsOpen={() => handleSetOpenDropdown("category")}
-          onSelect={handleSelectCategory}
-          placeholder="Categories"
+          isOpen={openDropdown === "inventory"}
+          setIsOpen={() => handleSetOpenDropdown("inventory")}
+          onSelect={handleSelectInventoryDescription}
+          placeholder="Descritpion"
           required
           search={true}
+          disabled={!selectedCategory}
         />
         {roleCode === "USERROLE_SYSTEMADMIN" && (
           <Dropdown
@@ -184,6 +241,15 @@ const ContainerAddOverlay = ({
           <input
             name="Size"
             value={descAddData.Size}
+            className="w-full inner-border-2 inner-border-primary rounded-xl p-2"
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label>Challan Unit</label>
+          <input
+            name="ChallanUnit"
+            value={descAddData.ChallanUnit}
             className="w-full inner-border-2 inner-border-primary rounded-xl p-2"
             onChange={handleChange}
           />
